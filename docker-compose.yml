@@ -1,0 +1,51 @@
+version: "3"
+services:
+  api:
+    container_name: api
+    build:
+      context: ./api
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db
+    volumes:
+      - ./api:/app
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails server -b '0.0.0.0'"
+
+  front:
+    container_name: front
+    build:
+      context: ./front
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./front:/app
+    command: bash -c "npm install && npm run dev"
+    depends_on:
+      - api
+
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - front
+      - api
+
+  db:
+    container_name: db
+    image: postgres:15.3
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app_development
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
